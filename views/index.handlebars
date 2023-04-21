@@ -4,6 +4,8 @@
   <title>Socket Chat!</title>
 </head>
 <body>
+
+
   <form id="editForm">
     <input id="editBox" type="text" />    
     <select name="channel" id="channelSelect">
@@ -22,15 +24,21 @@
   <hr>
 
   <form id="player">
+    <div>Player Enter, Name/Chips</div>
     <input id="playerBox" type="text" />
     <input id="chips" type="number">
-
+    <select name="channel" id="channelSelect2">
+      <option value="general">General</option>
+      <option value="memes">Memes</option>
+    </select>
     <input type="submit" />
   </form>
 
   
 
   <div id="messages"></div>
+
+  <div id="table"></div>
 
   <!-- Here, at the bottom of the body, we import our socket.io library
   for the client to use. We do this at the bottom to ensure that the page

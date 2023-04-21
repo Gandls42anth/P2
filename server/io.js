@@ -35,7 +35,6 @@ const reversePing = (ping) => {
 const socketSetup = (app) => {
 
 
-    io.emit('general',)
     /* To create our Socket.IO server with our Express app, we first
         need to have the http library create a "server" using our Express
         app as a template. We then hand that server off to Socket.IO which
@@ -78,7 +77,7 @@ const socketSetup = (app) => {
 
 
         socket.on('chat message', handleChatMessage);
-        socket.on('ping', handlePing)
+        socket.on('ping', handlePing);
         socket.on('reverse ping', reversePing);
     });
 
