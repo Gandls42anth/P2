@@ -400,7 +400,18 @@ for(let i=1;i<14;i++){
     }
 };
 
-//Now check for 1 pair
+if(TP.b != 0){
+    result.hNum = Tp.a;
+    result.hSuit = 4;
+    result.rank = 8;
+    return result;
+}else if(Tp.a != 0){
+    //If B is 0 but a is not, you actually have 1 pair
+    result.hNum = Tp.a;
+    result.hSuit = 3;
+    result.rank = 9;
+    return result;
+}
 
 
 //Failing all that, just take the highest card
