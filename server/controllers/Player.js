@@ -19,7 +19,7 @@ const Table  = models.Table;
 //Raise --> Call (if the bet is raised higher), All in (same as above), Fold
 //All in --> nothing, automatically call everything
 
-//At the end of each of these decisions, use socket to ping the table to check if it should move to the next hand/turn
+//At the end of each of these decisions, ping the table to see if you should continue to the next turn
 
 const call = async (req,res) => {
     jTable = await Table.find({name: {$eq: req.table}});
@@ -68,6 +68,8 @@ const call = async (req,res) => {
             }
         }
     )
+
+    
 
 }
 

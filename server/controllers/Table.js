@@ -1,6 +1,5 @@
 const { json } = require('body-parser');
 const models = require('../models');
-const { result } = require('underscore');
 const Table = models.Table;
 const Player = models.Player;
 
@@ -105,10 +104,6 @@ const NextCheck = async (req,res) => {
     //If each player (that has the decision 'call' or 'raise') has a bet that equals the table bet then continue into next Turn
     //if the player has the decision 'all' their bet doesn't need to be matching the tables
     //You don't need to account for 'fold' decisions because those are removed from the 'players' list beforehand
-    
-    //TODO:
-    //If all but one player has folded, give that player the pot and move to the next hand
-
     //Get the players
     let con = true;
     const jTable = await Table.find({name: {$eq: req.table}});
@@ -116,6 +111,13 @@ const NextCheck = async (req,res) => {
     const pArr = jTable.players;
     let pBet = 0;
     let p;
+
+    if(pArr.length == 1){
+        //Folded players are removed until the next hand so if theres only one player, they won!
+        //Skip to payout, index can be set to 0 because they'll be alone
+        payout(req,res,jTable,0);
+    }
+
     for(let i=0;i<pArr.length;i++){
          p = await Player.find({name: {$eq: pArr[i]}});
          pBet = p.bet;
@@ -123,6 +125,8 @@ const NextCheck = async (req,res) => {
             con = false;
         }
     }
+
+
     if(con){
         NextTurn(req,res,jTable);
     }
@@ -144,8 +148,8 @@ const NextHand = async (req,res) => {
     //Then make each player draw
     draw(req,res,false);
 
-    //Force the player with the most chips to cough up 10 chips for the ante
-    //(If the player with the most chips does not have 10 chips just take whatever they have and set their chips to 0 and decision to 'all')
+    //The player first on the players list has to ante, the player who hits the "Ready" button first is added to the players list first
+    //TODO
 }
 
 const NextTurn = async (req,res, jTable) => {
@@ -181,6 +185,71 @@ const WinCheck = async (req,res,jTable) => {
     //When checking for wins, go through each player individually
     //Take the 7 cards that they can combine (the two from their hand the 5 from the table)
     //Check for the highest hand first, see if there are 5 of one suit
+    Thand = jTable.hand;
+    let Phand;
+    let PArr = [];
+    for(let i=0;i<jTable.players.length;i++){
+        Phand = await Player.find(
+            {name: {$eq: `${jTable.players[i]}`}}
+            ).hand;
+            //Save each "best hand" for each player into a new array
+            pArr.push(bestHand(Phand.concat(Thand)));
+    };
+    //Now the Parr contains all the best hands of each player, it's also in order
+    //So 
+    let bestIndex = 0;
+    let comparison = {
+        "hSuit": 999,
+        "hNum": -999,
+        "rank": 999,
+    };
+    let cur;
+    for(let i=0;i<pArr.length;i++){
+        cur = PArr[i];
+        if(cur.rank < comparison.rank){
+            bestIndex = i;
+            comparison = cur;
+        }else if(cur.rank == comparison.rank && cur.hNum > comparison.hNum){
+            bestIndex = i;
+            comparison = cur;
+        }else if(cur.rank == comparison.rank && cur.hNum == comparison.hNum && cur.hSuit < comparison.hSuit){
+            bestIndex = i;
+            comparison = cur;
+        }
+    };
+    //Now comparison is the best hand and bestIndex is the index of player
+    payout(req,res,jTable,bestIndex);
+}
+
+const payout = async (req,res,jTable,bestIndex) => {
+    let p = await Player.find({name:{$eq: jTable.players[bestIndex]}});
+    let playerlist = (await Table.find({name:{$eq: jTable.name}})).players;
+    //Add the pot to the winning players chips
+    p.chips += jTable.pot;
+    jTable.pot = 0;
+    jTable.curBet = 0;
+    jTable.deck = shuffle();
+    jTable.inGame = false;
+    //Clear the bets of all players
+    //Clear the decisions of all players
+    //DONT clear the hands, people wanna see what happened, create ready/unready function like blackjack
+
+    for(let i=0;i<playerlist.length;i++){
+        await Player.update(
+            {name: {$eq: playerlist[i]}},
+            {$set: {bet: 0, decision: 'unready'}});
+    };
+
+    await Table.update(
+        {name: {$eq: jTable.name}},
+        {$set: {
+            pot: jTable.pop,
+            curBet: jTable.curBet,
+            deck: jTable.deck,
+            inGame: jTable.inGame,
+        }}
+        );
+
 
 }
 
@@ -386,7 +455,6 @@ if(three){
     return result;
 }
 
-//TODO:
 //Now check for two pair
 let TP = {
     "a": 0,
@@ -397,6 +465,12 @@ for(let i=1;i<14;i++){
     if(jsonR[`${i}`] == 2){
         TP.b = TP.a;
         TP.a = i;
+    }else if(jsonR[`${i}`] == 1){
+        //Save the highest one you find
+        //if you find 2 pair or one pair the result will be overwritten anyway
+        result.rank = 10;
+        result.hNum = i;
+        result.hSuit = 4;
     }
 };
 
@@ -415,7 +489,7 @@ if(TP.b != 0){
 
 
 //Failing all that, just take the highest card
-
+return result;
 
 }
 
@@ -563,4 +637,6 @@ const join = async (req,res) => {
 module.exports = {
     join,
     createTable,
+    NextCheck,
+    NextHand,
 }
