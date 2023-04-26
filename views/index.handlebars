@@ -12,25 +12,22 @@
       <option value="general">General</option>
       <option value="memes">Memes</option>
     </select>
-    <select name="decision" type="text"/>
-      <option value="undecided">Undecided</option>
-      <option value="call">Call</option>
-      <option value="raise">Raise</option>
-      <option value="fold">Fold</option>
     <input type="submit" />
   </form>
 
 
   <hr>
 
-  <form id="player">
+  <form id="player" name="playerIndex" action="/join" method="POST" class="playerIndex">
     <div>Player Enter, Name/Chips</div>
-    <input id="playerBox" type="text" />
-    <input id="chips" type="number">
-    <select name="channel" id="channelSelect2">
-      <option value="general">General</option>
-      <option value="memes">Memes</option>
+    <input id="playerBox" name="name" type="text" />
+    <input id="chips" name="chips" type="number">
+    <select name="table" id="tableSelect">
+      <option value="table1">Table 1</option>
+      <option value="table2">Table 2</option>
     </select>
+
+      </form>
     <input type="submit" />
   </form>
 
@@ -48,7 +45,8 @@
   for /socket.io/socket.io.js (as well as a minified version) so that our
   server hosts the client code as well. -->
   <script src="/socket.io/socket.io.js"></script>
-
+  
+  <script src="/client/client.js"></script>
   <!-- We then load our own client code, which express hosts for us. Remember
   that the /assets url tree is the /hosted folder. -->
   <script src="/assets/client.js"></script>

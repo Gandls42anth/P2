@@ -491,7 +491,7 @@ if(TP.b != 0){
 //Failing all that, just take the highest card
 return result;
 
-}
+};
 
 const checkStraight = (arr) => {
 let s = {
@@ -508,6 +508,9 @@ arr.sort();
 //First one passes, The second one does as well but thats a problem
 //Because its essentially going 
 //I have 1, I have 15, which is the 2 in a different suit
+//And also 28, 2 in yet another suit
+//15 should also connect to 3, which is 12 behind it
+//28 connects to 3 too, which is 25 behind it
 //But now I need to switch, I can't just iterate because it doesn't work like that anymore
 //I now need to chain off the different suit two
 
@@ -522,10 +525,10 @@ for(let i=0;i<arr.length;i++){
     }
 };
 
-}
+};
 const recursiveStraight = (arr,s,next) => {
     //If there is a next
-    let n = arr.find(k => k == next+1 || k ==next+14 || k == next+27 || k == next+40);
+    let n = arr.find(k => k == next+1 || k ==next+14 || k == next+27 || k == next+40 || k == next-14 || k == next-25 || k == next-37);
     if(n){
         //Increase the chain, and go off of that
         s.chain++;
@@ -533,9 +536,10 @@ const recursiveStraight = (arr,s,next) => {
         recursiveStraight(arr,s,n);
     }else if(s.chain <= 4){
         s.chain = 0;
+        s.high = 0;
     }
     return s;
-}
+};
 
 const checkFlush = (arr) => {
     let f = {
@@ -563,20 +567,21 @@ const checkFlush = (arr) => {
     }
 
     return f;
-}
+};
 
 const checkRoyal = (arr) => {
     if(arr[0]%13 != 1){
         return false;
     }
     //Since the array passed in is already organized by suit we don't have to worry about a mix n match scenario with the OR statements
+    //We don't, however, have any idea which suit was passed in, so the values could vary, account for that
     if(arr.find(k => k==10 || k == 23 || k==36 || k==49) 
     && arr.find(k => k==11 || k == 24 || k==37 || k==50)
     && arr.find(k => k==12 || k == 25 || k==38 || k==51)
     && arr.find(k => k==13 || k == 26 || k==39 || k==52)){
         return true;
     }
-}
+};
 const join = async (req,res) => {
 
     //If you can find a table with the name from the request, then the player is trying to join an existing table
@@ -628,10 +633,12 @@ const join = async (req,res) => {
                 NextHand();
             }
         }
+        return res.json({redirect: '/table'});
+
     }else{
         createTable();
     }
-}
+};
 
 
 module.exports = {

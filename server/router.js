@@ -12,7 +12,9 @@ const router = (app) => {
     app.post('/maker',mid.requiresLogin,controllers.Domo.makeDomo);
     app.get('/', mid.requireSecure,mid.requiresLogout,controllers.Account.loginPage);
 
-    app.post('/table', mid.requiresLogin,controllers.Table.join)
+    app.post('/table', mid.requiresLogin,controllers.Table.join);
+    app.post('/test', controllers.Player.test);
+    app.get('/tabble',controllers.Account.tablePage)
 };
 
 module.exports = router;

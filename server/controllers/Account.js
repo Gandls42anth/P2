@@ -1,6 +1,10 @@
 const models = require('../models');
 const Account = models.Account;
 
+const tablePage = (req,res) => {
+    return res.render('table')
+}
+
 const  loginPage = (req,res) => {
     return res.render('login');
 }
@@ -66,5 +70,6 @@ module.exports = {
     signupPage,
     login,
     logout,
-    signup
+    signup,
+    tablePage,
 };

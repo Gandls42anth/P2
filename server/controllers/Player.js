@@ -21,6 +21,20 @@ const Table  = models.Table;
 
 //At the end of each of these decisions, ping the table to see if you should continue to the next turn
 
+const test = async (req,res) => {
+    switch(req.d){
+        case 'call':
+            call(req,res);
+            break;
+        case 'raise':
+            raise(req,res);
+            break;
+        case 'fold':
+            raise(req,res);
+            break;
+    }
+};
+
 const call = async (req,res) => {
     jTable = await Table.find({name: {$eq: req.table}});
     p = await Player.find({name: {$eq: req.name}});
@@ -71,7 +85,7 @@ const call = async (req,res) => {
 
     
 
-}
+};
 
 const raise = async (req,res) =>{
 
@@ -128,7 +142,7 @@ const raise = async (req,res) =>{
 
 
 
-}
+};
 
 const fold = async (req,res) => {
 
@@ -167,3 +181,7 @@ await Table.update(
     )
 
 }
+
+module.exports = {
+    test
+};

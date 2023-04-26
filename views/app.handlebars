@@ -29,6 +29,24 @@
     </form>
 
   </section>
+
+
+  <section id="plyer">
+    <form id="playerForm" name="playerForm" action="/test" method="POST" class="playerForm">
+    <!--  How to get player max when loading the page (equal to player chips) -->
+    <input type="range" value="1" min="1" max="${user.chips}" oninput="this.nextElementSibling.value = this.value">
+                <output id="bet">24</output>
+    <!--  Only show bet numbers when raising, calls will automatically snap to the table bet -->
+    <!--  Every change should emit out of the socket and tell other players to update -->
+    <input id="submitBtn" type="submit" value="Bet" onclick="sendDecision()" />
+
+    </form>
+
+  </section>
+
+  <div id="secretUser" > 
+    
+  </div>
   
   <section id="domos">
     {{#if domos}}
@@ -49,6 +67,8 @@
     <h3><span id="errorMessage"></span></h3>
     <img id="domo" src="assets/img/domo.png" alt="domo"/>
   </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/client/client.js"></script>
   <script src="/assets/bundle.js"></script>
 </body>
 </html>

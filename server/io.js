@@ -20,14 +20,6 @@ const handleChatMessage = (msg) => {
     io.emit(msg.channel, msg.message);
 };
 
-const handlePing = (ping) => {
-    io.emit(ping.channel, ping);
-}
-
-const reversePing = (ping) => {
-    io.emit(ping.channel, ping);
-}
-
 
 /* This setup function takes in our express app, adds Socket.IO to it,
     and sets up event handlers for our io events.
@@ -76,9 +68,7 @@ const socketSetup = (app) => {
         */
 
 
-        socket.on('chat message', handleChatMessage);
-        socket.on('ping', handlePing);
-        socket.on('reverse ping', reversePing);
+        socket.on('nextcheck', handleChatMessage);
     });
 
     /* Finally, after our server is set up, we will return it so that we

@@ -12,7 +12,6 @@ const playerSchema = new mongoose.Schema({
   },
   hand: {
     type: [Number],
-    required: true,
   },
   bet: {
     type: Number,

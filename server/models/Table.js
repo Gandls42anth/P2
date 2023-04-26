@@ -15,7 +15,7 @@ const TableSchema = new mongoose.Schema({
     type: [Number],
     required: true,
   },
-  Pot: {
+  pot: {
     type: Number,
   },
   curBet: {
