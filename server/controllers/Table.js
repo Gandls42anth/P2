@@ -14,6 +14,27 @@ const Player = models.Player;
 //5. Draw (Either the Table is drawing or a player is)
 //6. NextHand (test if you should continue to the next hand)
 //7. NextTurn (test if you should continue to the next turn)
+const castCard = ['Ace','2','3','4','5','6','7','8','9','10','Jack','Queen','King'];
+cardCast = (arr) =>  {
+    let finalHtml =`<ul>  ${arr.map(w => {
+    if(w < 14){
+        return '<li>' + castCard[w-1] + ' of Diamonds' + '</li>';
+    }else{
+    //If it was above thirteen, by how much? 
+    //14 =< w < 27 should return one value
+    switch(Math.ceil(w/13)){
+        case 2:
+            return '<li>' + castCard[w-13-1] + " of Hearts"+ '</li>';
+        case 3:
+            return '<li>' + castCard[w-26-1] + " of Spades"+ '</li>';
+        case 4: 
+            return '<li>' + castCard[w-39-1] + " of Clovers"+ '</li>';
+    }
+    }
+    }).join('')}  </ul>`;
+return finalHtml;
+};
+
 
 const createTable = async (req,res) => {
     const tableData = {
@@ -587,7 +608,7 @@ const join = async (req,res) => {
     //If you can find a table with the name from the request, then the player is trying to join an existing table
     //It shouldn't be possible to join a nonexistent one but prepare for everything
     //The requests 'table' property is the name of the table they're trying to join
-    jTable = await Table.find({name: {$eq: req.table}});
+    let jTable = await Table.find({name: {$eq: req.table}});
     if(jTable){
 
         const data = {
@@ -633,10 +654,41 @@ const join = async (req,res) => {
                 NextHand();
             }
         }
-        return res.json({redirect: '/table'});
+
+        let pArr = jTable.players;
+        let pDoc = [];
+
+        for(let i=0;i<pArr.length;i++){
+            pDoc.push(await Player.find({name: {$eq: pArr[i]}}));
+        }
+        let doc = {
+            //at This point, jTable may actually be out of date, but since the things changed are irrelevant to front facing
+            //Stuff
+            "table": jTable,
+            "players": pDoc
+        }
+
+
+        return res.render('/table',{docs: doc});
 
     }else{
         createTable();
+        jTable = await Table.find({name: {$eq: req.table}});
+        let pArr = jTable.players;
+        let pDoc = [];
+
+        for(let i=0;i<pArr.length;i++){
+            pDoc.push(await Player.find({name: {$eq: pArr[i]}}));
+        }
+        let doc = {
+            //at This point, jTable may actually be out of date, but since the things changed are irrelevant to front facing
+            //Stuff
+            "table": jTable,
+            "players": pDoc
+        }
+
+
+        return res.render('/table',{docs: doc});
     }
 };
 
