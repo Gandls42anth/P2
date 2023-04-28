@@ -2,38 +2,33 @@
 <html lang="en">
 <head>
   <title>Not Found</title>
-  <script>
-        const castCard = ['Ace','2','3','4','5','6','7','8','9','10','Jack','Queen','King'];
-        cardCast(arr) {
-             let finalHtml =`<ul>  ${arr.map(w => {
-                if(w < 14){
-                    return '<li>' + castCard[w-1] + ' of Diamonds' + '</li>';
-                }else{
-                    //If it was above thirteen, by how much? 
-                    //14 =< w < 27 should return one value
-                    switch(Math.ceil(w/13)){
-                        case 2:
-                            return '<li>' + castCard[w-13-1] + " of Hearts"+ '</li>';
-                        case 3:
-                            return '<li>' + castCard[w-26-1] + " of Spades"+ '</li>';
-                        case 4: 
-                            return '<li>' + castCard[w-39-1] + " of Clovers"+ '</li>';
-                    }
-                }
-            }).join('')}  </ul>`;
-            return finalHtml;
-        };
-    </script>
 </head>
 <body>
     <h1>404 the {{page}} Page was Not Found</h1>
     <a href="/">Home</a> <br/>
 
     <section id="table">
-        {{#if table}}
+        {{#if this.table}}
         <div>
-            <h3 class="tableName">Name: {{this.name}}</h3>
-            <h3 class="tableBet">Bet:{{this.curBet}}</h3>
+            <h3 class="tableName">Name: {{this.table.name}}</h3>
+            <h3 class="tableBet">Bet:{{this.table.curBet}}</h3>
+            {{this.table.hand}}
+            {{#each this.players}}
+            <!-- Inside the each statement "this" refers to each player, like this "this" is different from the outside "this"
+            how do I get out of this scope and compare the current players name to another attribute (real players name) of the doc I sent in to this page? -->
+            {{#if this.name != ../curPlayer}}
+            <div>
+                <h3>Player: {{this.name}} </h3>
+                <h3>Bet: {{this.bet}}</h3>
+                <h3>Decision: {{this.decision}}</h3>
+            </div>
+            {{else}}
+            <div>
+                <h3>Player: {{this.name}} </h3>
+                <h3>Bet: {{this.bet}}</h3>
+                <h3>Hand: {{this.hand}}</h3>
+                <h3>Decision: {{this.decision}}</h3>
+            </div>
             
         </div>
         

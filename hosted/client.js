@@ -2,29 +2,38 @@
     it from our client code. The io() function comes from the socket.io
     client side library, which is in a script tag in views/index.handlebars.
 */
+const models = require('../server/models');
+const player = models.Player;
+const table = models.Table;
+
+
 const socket = io();
 
 /* This function is responsible for setting up events related to the edit
     box in our simple chat application.
 */
+const tableAdd = async(Pname,tableName) => {
+    await Table.update(
+        {name: {$eq: tableName}},
+        {$push: {players: Pname}}
+        );
+}
 const handleEditBox = () => {
     const editForm = document.getElementById('editForm');
     const editBox = document.getElementById('editBox');
     const channelSelect = document.getElementById('channelSelect');
 
     const playerForm = document.getElementById('player');
-    const playerBox = document.getElementById('playerBox');
 
     playerForm.addEventListener('submit', (e) => {
         //So the player submits their form and joins a table (channel)
         e.preventDefault();
-        if(playerBox.value){
-            const data = {
-                name: name,
-                
-            }
-        }
-    });
+        //The
+        
+
+    }
+    )
+};
     
     /* When the user presses the "submit" button in the edit form, this 
         code will handle the event. First we prevent the forms default
@@ -54,7 +63,6 @@ const handleEditBox = () => {
             editBox.value = '';
         }
     });
-};
 
 /* This simple function just takes in text (msg), and displays it
     on the screen in the messages div.
@@ -63,14 +71,6 @@ const displayMessage = (msg) => {
     const messageDiv = document.createElement('div');
     messageDiv.textContent = msg;
     document.getElementById('messages').appendChild(messageDiv);
-}
-
-const ping = (ping) => {
-
-}
-
-const reverseping = (ping) => {
-
 }
 
 /* This function handles selections in the channel dropdown. When
