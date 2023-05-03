@@ -1,39 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Not Found</title>
+  <title>Table</title>
 </head>
 <body>
-    <h1>404 the {{page}} Page was Not Found</h1>
+    <h1>Table Page</h1>
     <a href="/">Home</a> <br/>
-
     <section id="table">
-        {{#if this.table}}
+        {{#if docs}}
         <div>
-            <h3 class="tableName">Name: {{this.table.name}}</h3>
-            <h3 class="tableBet">Bet:{{this.table.curBet}}</h3>
-            {{this.table.hand}}
-            {{#each this.players}}
-            <!-- Inside the each statement "this" refers to each player, like this "this" is different from the outside "this"
-            how do I get out of this scope and compare the current players name to another attribute (real players name) of the doc I sent in to this page? -->
-            {{#if this.name != ../curPlayer}}
+            <h3 id="tableName">{{docs.table.name}}</h3>
+            <h3 id="tableBet">Bet:{{docs.table.curBet}}</h3>
+            <h3>{{docs.table.hand}}</h3>
+            {{#each docs.players}}
             <div>
                 <h3>Player: {{this.name}} </h3>
                 <h3>Bet: {{this.bet}}</h3>
-                <h3>Decision: {{this.decision}}</h3>
-            </div>
-            {{else}}
-            <div>
-                <h3>Player: {{this.name}} </h3>
-                <h3>Bet: {{this.bet}}</h3>
-                <h3>Hand: {{this.hand}}</h3>
                 <h3>Decision: {{this.decision}}</h3>
             </div>
             
+            {{/each}}
+            <div>
+                <h3 id="playerName">{{docs.curPlayer.name}} </h3>
+                <h3>Bet: {{docs.curPlayer.bet}}</h3>
+                <h3>Decision: {{docs.curPlayer.decision}}</h3>
+                <h3>Hand: {{docs.curPlayer.hand}}</h3>
+            </div>
+            <div id="secretT">{{docs.tableString}}
+            </div>
+            {{#if docs.update}}
+                <div id="updateBlock"></div>
+            {{/if}}
+            <ul id="players">
+                {{#each docs.players}}
+                    <li class="pBlock">{{this}}</li>
+                {{/each}}
+            </ul>
+            {{else}}
+        <h3 class ="emptyDomo">No Table Yet! Here's what we have: {{this}}</h3>
+        {{/if}}
         </div>
         
     </section>
     <script src="/assets/bundle.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/assets/client/client.js"></script>
     
 </body>
 </html>

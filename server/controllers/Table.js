@@ -2,7 +2,8 @@ const { json } = require('body-parser');
 const models = require('../models');
 const Table = models.Table;
 const Player = models.Player;
-
+const socket = require('../io');
+const { push } = require('mongoose/lib/types/array/methods');
 //What methods should a table have?
 
 //1. Join, when a player wants to join (They send their info, if you're in a game  add to the spectators)
@@ -38,17 +39,16 @@ cardCast = (arr) => {
 
 const createTable = async (req, res) => {
     const tableData = {
-        name: "table1",
+        name: req.body.table,
         pot: 0,
         curBet: 0,
-        players: [],
+        players: [req.body.name],
         spectators: [],
         inGame: false,
         hand: [],
     }
     const newTable = new Table(tableData);
-    newTable.save();
-    return res.json({ redirect: '/maker' });
+    await newTable.save();
 }
 
 const shuffle = () => {
@@ -70,12 +70,12 @@ const shuffle = () => {
 
 const draw = async (req, res, fromTable) => {
     //The request has a player, and a table
-    const jTable = await Table.find({ name: { $eq: req.table } });
+    const jTable = await Table.findOne({ name: { $eq: req.body.table } }).lean();
     const jdeck = jTable.deck
 
     if (fromTable) {
         //if the request is from the table, handle differently
-        await Table.update({ name: { $eq: req.table } },
+        await Table.findOneAndUpdate({ name: { $eq: req.body.table } },
             {
                 $push: {
                     hand: jdeck.pop()
@@ -99,7 +99,7 @@ const draw = async (req, res, fromTable) => {
             tempHand.push(jdeck.pop());
             tempHand.push(jdeck.pop());
 
-            await Player.update(
+            await Player.findOneAndUpdate(
                 { name: { $eq: pArr[i] } },
                 {
                     $set: {
@@ -111,8 +111,8 @@ const draw = async (req, res, fromTable) => {
         //Now each player has had their hand stocked, and the deck lost what it needed to 
         //Make sure to set the tables deck back to its new state
 
-        await Table.update(
-            { name: req.table },
+        await Table.findOneAndUpdate(
+            { name: req.body.table },
             {
                 $set: {
                     deck: jdeck
@@ -133,7 +133,7 @@ const NextCheck = async (req, res) => {
     //You don't need to account for 'fold' decisions because those are removed from the 'players' list beforehand
     //Get the players
     let con = true;
-    const jTable = await Table.find({ name: { $eq: req.table } });
+    const jTable = await Table.findOne({ name: { $eq: req.body.table } }).lean();
     const Tbet = jTable.curBet;
     const pArr = jTable.players;
     let pBet = 0;
@@ -146,7 +146,7 @@ const NextCheck = async (req, res) => {
     }
 
     for (let i = 0; i < pArr.length; i++) {
-        p = await Player.find({ name: { $eq: pArr[i] } });
+        p = await Player.findOne({ name: { $eq: pArr[i] } }).lean();
         pBet = p.bet;
         if (pBet != Tbet && p.decision != 'all') {
             con = false;
@@ -162,16 +162,29 @@ const NextCheck = async (req, res) => {
 
 const NextHand = async (req, res) => {
     //With each hand, shuffle the deck, and save the result to the deck attribute of table
-
-    await Table.update(
-        { name: { $eq: req.name } },
+    
+    let jTable = await Table.findOneAndUpdate(
+        { name: { $eq: req.body.table } },
         {
             $set: {
                 deck: shuffle(),
                 inGame: true
             }
         },
-    );
+    ).lean();
+    let pArr = jTable.players;
+    let pDoc = [];
+
+        for (let i = 0; i < pArr.length; i++) {
+            let pushP = await Player.findOne({ name: { $eq: pArr[i] } }).lean();
+            pDoc.push(pushP);
+        }
+    //Update table needs to know the table and the players in JSON but nothing more
+    let doc = {
+        "table": jTable,
+        "players": pDoc,
+
+    }
     //Then make each player draw
     draw(req, res, false);
 
@@ -216,7 +229,7 @@ const WinCheck = async (req, res, jTable) => {
     let Phand;
     let PArr = [];
     for (let i = 0; i < jTable.players.length; i++) {
-        Phand = await Player.find(
+        Phand = await Player.findOne(
             { name: { $eq: `${jTable.players[i]}` } }
         ).hand;
         //Save each "best hand" for each player into a new array
@@ -249,8 +262,8 @@ const WinCheck = async (req, res, jTable) => {
 }
 
 const payout = async (req, res, jTable, bestIndex) => {
-    let p = await Player.find({ name: { $eq: jTable.players[bestIndex] } });
-    let playerlist = (await Table.find({ name: { $eq: jTable.name } })).players;
+    let p = await Player.findOne({ name: { $eq: jTable.players[bestIndex] } }).lean();
+    let playerlist = (await Table.findOne({ name: { $eq: jTable.name } }).lean()).players;
     //Add the pot to the winning players chips
     p.chips += jTable.pot;
     jTable.pot = 0;
@@ -262,12 +275,12 @@ const payout = async (req, res, jTable, bestIndex) => {
     //DONT clear the hands, people wanna see what happened, create ready/unready function like blackjack
 
     for (let i = 0; i < playerlist.length; i++) {
-        await Player.update(
+        await Player.findOneAndUpdate(
             { name: { $eq: playerlist[i] } },
             { $set: { bet: 0, decision: 'unready' } });
     };
 
-    await Table.update(
+    await Table.findOneAndUpdate(
         { name: { $eq: jTable.name } },
         {
             $set: {
@@ -557,7 +570,7 @@ const checkStraight = (arr) => {
 };
 const recursiveStraight = (arr, s, next) => {
     //If there is a next
-    let n = arr.find(k => k == next + 1 || k == next + 14 || k == next + 27 || k == next + 40 || k == next - 14 || k == next - 25 || k == next - 37);
+    let n = arr.findOne(k => k == next + 1 || k == next + 14 || k == next + 27 || k == next + 40 || k == next - 14 || k == next - 25 || k == next - 37);
     if (n) {
         //Increase the chain, and go off of that
         s.chain++;
@@ -604,109 +617,167 @@ const checkRoyal = (arr) => {
     }
     //Since the array passed in is already organized by suit we don't have to worry about a mix n match scenario with the OR statements
     //We don't, however, have any idea which suit was passed in, so the values could vary, account for that
-    if (arr.find(k => k == 10 || k == 23 || k == 36 || k == 49)
-        && arr.find(k => k == 11 || k == 24 || k == 37 || k == 50)
-        && arr.find(k => k == 12 || k == 25 || k == 38 || k == 51)
-        && arr.find(k => k == 13 || k == 26 || k == 39 || k == 52)) {
+    if (arr.findOne(k => k == 10 || k == 23 || k == 36 || k == 49)
+        && arr.findOne(k => k == 11 || k == 24 || k == 37 || k == 50)
+        && arr.findOne(k => k == 12 || k == 25 || k == 38 || k == 51)
+        && arr.findOne(k => k == 13 || k == 26 || k == 39 || k == 52)) {
         return true;
     }
 };
 const join = async (req, res) => {
 
+
+    //When you join, socket goes onto the channel, and off the default
+    
     //If you can find a table with the name from the request, then the player is trying to join an existing table
     //It shouldn't be possible to join a nonexistent one but prepare for everything
     //The requests 'table' property is the name of the table they're trying to join
-    let jTable = await Table.find({ name: { $eq: req.table } });
+    let jTable = await Table.findOne({name: req.body.table} ).lean();
+
+    
+    //A table needs a name by definition
+    //So a false table will have a false name
     if (jTable) {
 
         const data = {
-            name: req.name,
-            chips: req.chips,
+            name: req.body.name,
+            chips: req.body.chips,
             bet: 0,
             hand: [],
         }
 
-        let p = await Player.find({ name: { $eq: req.name } })
+        let p = await Player.findOne({ name: { $eq: req.body.name } }).lean();
+        
         if (p) {
             //If the player exists, continue as normal
         } else {
             //if the player does not exist, create the player
             const data = {
-                name: req.name,
-                chips: req.chips,
+                name: req.body.name,
+                chips: req.body.chips,
                 bet: 0,
                 hand: [],
+                decision: 'undecided',
+
             }
             const newPlayer = new Player(data);
             await newPlayer.save();
-
+            p = await Player.findOne({ name: { $eq: req.body.name } }).lean();
         }
         //The table exists, now what?
         //Well if it's in a game then add the player(their name at least) to spectators
         if (jTable.inGame) {
 
-            await Table.find({}).updateOne(
-                { name: { $eq: req.table } },
+            await Table.findOne({}).updateOne(
+                { name: { $eq: req.body.table } },
                 { $push: { spectator: data.name } }
             );
 
         } else {
-            await Table.find({}).updateOne(
-                { name: { $eq: req.table } },
+            await Table.findOne({}).updateOne(
+                { name: { $eq: req.body.table } },
                 { $push: { players: data.name } }
             );
 
-
+            
             //If there are at least 2 players, the game can start
             if (jTable.players.length > 1) {
-                NextHand();
-            }
-        }
+                NextHand(req,res);
+            };
+        };
 
         let pArr = jTable.players;
         let pDoc = [];
 
         for (let i = 0; i < pArr.length; i++) {
-            pDoc.push(await Player.find({ name: { $eq: pArr[i] } }));
+            let pushP = await Player.findOne({ name: { $eq: pArr[i] } }).lean();
+            
+            if(pushP.name != p.name){
+            pDoc.push(pushP);
+            }
         }
-        jTable.hand = castCard(jTable.hand);
+        jTable.hand = cardCast(jTable.hand);
         let doc = {
             //at This point, jTable may actually be out of date, but since the things changed are irrelevant to front facing
             //Stuff
             "table": jTable,
             "players": pDoc,
-            "curPlayer": req.name
+            "curPlayer": p,
+            "spectators": jTable.spectators,
+            "tableString": JSON.stringify(jTable),
         }
-
-
-        return res.render('/table', { docs: doc });
+        
+        return res.render('table', { docs: doc });
 
     } else {
-        createTable();
-        jTable = await Table.find({ name: { $eq: req.table } });
+        //The table does NOT exist, make it
+        await createTable(req,res);
+        
+        //For some reason the follow up doesn't work?
+        jTable = await Table.findOne({ name: req.body.table }).lean();
+        
         let pArr = jTable.players;
         let pDoc = [];
 
+        //the player joining is already added in the createTable method
+        //Now make sure that endpoint exists by creating the player (if they don't exist)
+        let p = await Player.findOne({ name: { $eq: req.body.name } }).lean();
+        
+        if (p) {
+            //If the player exists, continue as normal
+        } else {
+            //if the player does not exist, create the player
+            const data = {
+                name: req.body.name,
+                chips: req.body.chips,
+                bet: 0,
+                hand: [],
+                decision: 'undecided',
+
+            }
+            const newPlayer = new Player(data);
+            await newPlayer.save();
+            p = await Player.findOne({ name: { $eq: req.body.name } }).lean();
+        }
+        p.hand = cardCast(p.hand);
+
         for (let i = 0; i < pArr.length; i++) {
-            pDoc.push(await Player.find({ name: { $eq: pArr[i] } }));
-            pDoc[i].hand = castCard(pDoc[i].hand);
+            let pushP = await Player.findOne({ name: { $eq: pArr[i] } }).lean()
+            if(pushP.name != p.name){
+            pDoc.push(pushP);
+            };
         }
 
         //jTable.hand will now be the full html that needs to be appended to the page
-        jTable.hand = castCard(jTable.hand);
+        jTable.hand = cardCast(jTable.hand);
+        
 
         let doc = {
             //pDoc will have all the players full data (including hands but don't show those lol), and it should know who sent the request
             //So that when it builds the player cards it knows which one to give you control of
             "table": jTable,
             "players": pDoc,
-            "curPlayer": req.name
-        }
-
-
-        return res.render('/table', { docs: doc });
+            "curPlayer": p,
+            "spectators": jTable.spectators,
+            "tableString": JSON.stringify(jTable),
+        };
+        
+        return res.render('table', { docs: doc });
     }
 };
+
+const getTheTable = async(req,res) => {
+
+    const doc = {
+        "table": req.body.table,
+        "players": req.body.players,
+        "curPlayer": req.body.curPlayer,
+        "spectators": req.body.table.spectators,
+        "tableString": JSON.stringify(req.body.table),
+        "update": true
+    }
+    res.render('table',{docs:doc});
+}
 
 
 module.exports = {
@@ -714,4 +785,5 @@ module.exports = {
     createTable,
     NextCheck,
     NextHand,
+    getTheTable,
 }

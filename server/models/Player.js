@@ -1,8 +1,6 @@
 
 const mongoose = require('mongoose');
 
-let playerModel = {};
-
 const playerSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -27,7 +25,7 @@ const playerSchema = new mongoose.Schema({
 // (the name of the object type. Can be anything)
 // and the schema to make a model from.
 // Look at the model variable definition above for more details.
-playerModel = mongoose.model('Player', playerSchema);
+const playerModel = mongoose.model('Player', playerSchema);
 
 // We only want to export the cat model, so we can overwrite the entire exports object.
-module.exports = playerSchema;
+module.exports = playerModel;

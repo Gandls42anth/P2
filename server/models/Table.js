@@ -1,8 +1,6 @@
 
 const mongoose = require('mongoose');
 
-let tableModel = {};
-
 const TableSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -40,7 +38,7 @@ const TableSchema = new mongoose.Schema({
 // (the name of the object type. Can be anything)
 // and the schema to make a model from.
 // Look at the model variable definition above for more details.
-tableModel = mongoose.model('Table', TableSchema);
+const tableModel = mongoose.model('Table', TableSchema);
 
 // We only want to export the cat model, so we can overwrite the entire exports object.
-module.exports = TableSchema;
+module.exports = tableModel;

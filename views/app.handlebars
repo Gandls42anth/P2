@@ -21,25 +21,15 @@
 
   <section id="chooseTable">
     <form id="tableForm" name="tableForm" action="/table" method="POST" class="tableForm">
+    <label for="name">Name: </label>
+    <input id="domoName" type="text" name="name" placeholder="Player Name"/>
+    <label for="chips">Age: </label>
+    <input id="domoAge" type="text" name="chips" placeholder="Player Chips"/>
     <select name="table" id="tableSelect">
       <option value="table1">Table 1</option>
       <option value="table2">Table 2</option>
     </select>
     <input type="submit" value="Choose Table">
-    </form>
-
-  </section>
-
-
-  <section id="plyer">
-    <form id="playerForm" name="playerForm" action="/test" method="POST" class="playerForm">
-    <!--  How to get player max when loading the page (equal to player chips) -->
-    <input type="range" value="1" min="1" max="${user.chips}" oninput="this.nextElementSibling.value = this.value">
-                <output id="bet">24</output>
-    <!--  Only show bet numbers when raising, calls will automatically snap to the table bet -->
-    <!--  Every change should emit out of the socket and tell other players to update -->
-    <input id="submitBtn" type="submit" value="Bet" onclick="sendDecision()" />
-
     </form>
 
   </section>
@@ -68,7 +58,7 @@
     <img id="domo" src="assets/img/domo.png" alt="domo"/>
   </div>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="/client/client.js"></script>
+    <script src="/assets/client/client.js"></script>
   <script src="/assets/bundle.js"></script>
 </body>
 </html>

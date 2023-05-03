@@ -22,7 +22,7 @@ const Table  = models.Table;
 //At the end of each of these decisions, ping the table to see if you should continue to the next turn
 
 const test = async (req,res) => {
-    switch(req.d){
+    switch(req.body.d){
         case 'call':
             call(req,res);
             break;
@@ -34,10 +34,14 @@ const test = async (req,res) => {
             break;
     }
 };
+const getPlayer = async (req,res) => {
+    debugger;
+    return await Player.findOne({name: {$eq: req.body.name}}).lean();
+}
 
 const call = async (req,res) => {
-    jTable = await Table.find({name: {$eq: req.table}});
-    p = await Player.find({name: {$eq: req.name}});
+    jTable = await Table.findOne({name: {$eq: req.body.table}}).lean();
+    p = await Player.findOne({name: {$eq: req.body.name}}).lean();
     //First, check the current tables bet
     const Tbet = jTable.curBet;
     const Pbet = p.bet;
@@ -62,8 +66,8 @@ const call = async (req,res) => {
         }
     }
     //The only things that can change are your total chips, your current bet and your decision, update those
-    await Player.update(
-        {name: {$eq: req.name}},
+    await Player.findOneAndUpdate(
+        {name: {$eq: req.body.name}},
         {
             $set: {
                 decision: decide,
@@ -73,9 +77,9 @@ const call = async (req,res) => {
         }
     );
 
-    await Table.update(
+    await Table.findOneAndUpdate(
 
-        {name: {$eq: req.table}},
+        {name: {$eq: req.body.table}},
         {
             $inc: {
                 pot: dif
@@ -94,11 +98,11 @@ const raise = async (req,res) =>{
     //Then get the tables bet
     //Confirm that your new bet is higher than the current table bet
     //If it is, alter the tables bet, and send out a ping using socket so all the other players know
-    jTable = await Table.find({name: {$eq: req.table}});
-    p = await Player.find({name: {$eq: req.name}});
+    jTable = await Table.findOne({name: {$eq: req.body.table}});
+    p = await Player.findOne({name: {$eq: req.body.name}});
     
     //betR is the new amount you're setting as your bet
-    let betR = req.bet;
+    let betR = req.body.bet;
     let Tbet = jTable.curBet;
     let pBet = p.bet;
     let pChips = p.chips;
@@ -116,7 +120,7 @@ const raise = async (req,res) =>{
         //Everyone needs to match it or go all in to keep playing
         Tbet = betR;
         await Table.update(
-            {name: {$eq: req.table}},
+            {name: {$eq: req.body.table}},
             {
                 $set: {
                     curbet: Tbet
@@ -127,8 +131,8 @@ const raise = async (req,res) =>{
             }
         );
         
-        await Player.update(
-            {name: {$eq: req.name}},
+        await Player.findOneAndUpdate(
+            {name: {$eq: req.body.name}},
             {
                 $set: {
                     decision: decide,
@@ -148,10 +152,10 @@ const fold = async (req,res) => {
 
 //If you fold, your decision is set to fold, you are removed from the players list and put into the spectators list
 //Your bet is left in the pot 
-p = await Player.find({name: {$eq: req.name}});
+p = await Player.findOne({name: {$eq: req.body.name}});
 
-await Player.update(
-    {name: {$eq: req.name}},
+await Player.findOneAndUpdate(
+    {name: {$eq: req.body.name}},
     {
         $set: {
             decision: 'fold',
@@ -163,19 +167,19 @@ await Player.update(
 
 
 await Table.update(
-    {name: {$eq: req.name}},
+    {name: {$eq: req.body.name}},
     {
         $pull: {
-            players: {$in: [req.name]},
+            players: {$in: [req.body.name]},
         }
     }
 );
 
 await Table.update(
-    {name: {$eq: req.table}},
+    {name: {$eq: req.body.table}},
     {
         $push: {
-            spectators: req.name
+            spectators: req.body.name
         }
     }
     )
@@ -183,5 +187,5 @@ await Table.update(
 }
 
 module.exports = {
-    test
+    getPlayer
 };

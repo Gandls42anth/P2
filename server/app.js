@@ -13,10 +13,12 @@ const redis = require('redis');
 
 
 
-
 const router = require('./router.js');
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
 
+const socketSetup = require('./io.js');
+
+const REDISCLOUD_URL = "redis://default:De9XRyxfngXbgFNh4T87lQxbqLRgQWFO@redis-14149.c44.us-east-1-2.ec2.cloud.redislabs.com:14149"
 const dbURI = process.env.MONGODB_URI || 'mongodb+srv://nds5465:flOIq6iafe7Vnfwu@gandls.0sugxct.mongodb.net/SimpleModels?retryWrites=true&w=majority';
 console.log(dbURI);
 mongoose.connect(dbURI).catch((err) => {
@@ -25,9 +27,9 @@ mongoose.connect(dbURI).catch((err) => {
         throw err;
     }
 });
-console.log(process.env.REDISCLOUD_URL);
+console.log(REDISCLOUD_URL);
 const redisClient = redis.createClient({
-    url:process.env.REDISCLOUD_URL,
+    url:REDISCLOUD_URL,
 });
 redisClient.on('error',err => console.log('Redis Client Error',err));
 redisClient.connect().then(()=>{
@@ -57,12 +59,17 @@ app.engine('handlebars',expressHandlebars.engine({
 }));
 app.set('view engine', 'handlebars')
 app.set('views', `${__dirname}/../views`);
+console.log(`${__dirname}/../views`);
 
 router(app);
 
-app.listen(port,(err) => {
-    if(err) {throw err; }
+const server = socketSetup(app);
+
+server.listen(port, (err) => {
+    if (err) {
+      throw err;
+    }
     console.log(`Listening on port ${port}`);
-})
+  });
 })
 console.log(mongoose.connection.readyState);

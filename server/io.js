@@ -4,7 +4,6 @@
 */
 const http = require('http');
 const { Server } = require('socket.io');
-
 /* We are also going to make a file-scoped 'io' variable in which to
     store our io server. This is simply so that we can use the io
     server from various functions in this file without having to
@@ -20,13 +19,16 @@ const handleChatMessage = (msg) => {
     io.emit(msg.channel, msg.message);
 };
 
+const fulltUpdate = (msg) => {
+    debugger;
+    io.emit(msg.table.name,msg);
+}
+
 
 /* This setup function takes in our express app, adds Socket.IO to it,
     and sets up event handlers for our io events.
 */
 const socketSetup = (app) => {
-
-
     /* To create our Socket.IO server with our Express app, we first
         need to have the http library create a "server" using our Express
         app as a template. We then hand that server off to Socket.IO which
@@ -68,7 +70,7 @@ const socketSetup = (app) => {
         */
 
 
-        socket.on('nextcheck', handleChatMessage);
+        socket.on('tUpdate', fulltUpdate);
     });
 
     /* Finally, after our server is set up, we will return it so that we
