@@ -16,7 +16,7 @@ const redis = require('redis');
 const router = require('./router.js');
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
 
-const socketSetup = require('./io.js');
+const {socketSetup} = require('./io.js');
 
 const REDISCLOUD_URL = "redis://default:De9XRyxfngXbgFNh4T87lQxbqLRgQWFO@redis-14149.c44.us-east-1-2.ec2.cloud.redislabs.com:14149"
 const dbURI = process.env.MONGODB_URI || 'mongodb+srv://nds5465:flOIq6iafe7Vnfwu@gandls.0sugxct.mongodb.net/SimpleModels?retryWrites=true&w=majority';

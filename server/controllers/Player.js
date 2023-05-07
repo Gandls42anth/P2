@@ -2,6 +2,8 @@
 const models = require('../models');
 const Player = models.Player;
 const Table  = models.Table;
+const io = require('../io');
+const tController = require('./Table.js');
 
 //The player can fold/call/raise
 //They can also add funds to their account
@@ -22,7 +24,8 @@ const Table  = models.Table;
 //At the end of each of these decisions, ping the table to see if you should continue to the next turn
 
 const test = async (req,res) => {
-    switch(req.body.d){
+    debugger;
+    switch(req.body.decision){
         case 'call':
             call(req,res);
             break;
@@ -30,13 +33,32 @@ const test = async (req,res) => {
             raise(req,res);
             break;
         case 'fold':
-            raise(req,res);
+            fold(req,res);
             break;
+        case 'ready':
+            ready(req,res)
+            break;
+
     }
 };
 const getPlayer = async (req,res) => {
-    debugger;
-    return await Player.findOne({name: {$eq: req.body.name}}).lean();
+    const r = await Player.findOne({name: {$eq: req.body.name}}).lean();
+    return res.json({player: r});
+}
+
+const ready = async(req,res) => {
+    //No changes to the table are happening
+    //Players bets, decisions, and chips have all been accounted for
+    //Their hands will be reset once the next part begins
+    await Player.findOneAndUpdate(
+        {name: {$eq: req.body.name}},
+        {
+            $set: {
+                decision: 'ready',
+            }
+        }
+    );
+    tController.NextReadyCheck();
 }
 
 const call = async (req,res) => {
@@ -44,7 +66,7 @@ const call = async (req,res) => {
     p = await Player.findOne({name: {$eq: req.body.name}}).lean();
     //First, check the current tables bet
     const Tbet = jTable.curBet;
-    const Pbet = p.bet;
+    const Pbet = req.bet;
     let dif = Tbet-Pbet;
     let Pchips = p.chips;
     let decide = 'call';
@@ -85,9 +107,9 @@ const call = async (req,res) => {
                 pot: dif
             }
         }
-    )
+    );
 
-    
+    tController.NextCheck();
 
 };
 
@@ -141,9 +163,8 @@ const raise = async (req,res) =>{
                 }
             }
         );
-
+        tController.NextCheck();
     }
-
 
 
 };
@@ -183,9 +204,10 @@ await Table.update(
         }
     }
     )
-
+    tController.NextCheck();
 }
 
 module.exports = {
-    getPlayer
+    getPlayer,
+    test
 };

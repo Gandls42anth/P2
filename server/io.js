@@ -20,7 +20,6 @@ const handleChatMessage = (msg) => {
 };
 
 const fulltUpdate = (msg) => {
-    debugger;
     io.emit(msg.table.name,msg);
 }
 
@@ -47,18 +46,18 @@ const socketSetup = (app) => {
         which represents their unique connection to our server.
     */
     io.on('connection', (socket) => {
-
-        //When a user connects, they emit some kind of ping that asks all other users their name
-
-
         console.log('a user connected');
 
         /* With the socket object, we can handle events for that specific
             user. For example, the disconnect event fires when the user
             disconnects (usually by closing their browser window).
         */
-        socket.on('disconnect', () => {
+        socket.on('disconnect', (e) => {
             console.log('a user disconnected');
+            //ON disconnection, have every client update their page
+            //and have every table check if the next turn is in order
+            //if you can somehow thin down to the one table where the socket disconnected
+            socket.broadcast.emit('disconnectCheck');
         });
 
         /* We can also create custom events. For example, the 'chat message'
@@ -80,4 +79,7 @@ const socketSetup = (app) => {
 };
 
 // We only export the one function from this file, just like in router.js
-module.exports = socketSetup;
+module.exports = {
+    socketSetup,
+    fulltUpdate
+};

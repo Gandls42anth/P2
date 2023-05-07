@@ -2,12 +2,24 @@
    displays it to the user. Will be hidden by other events that could
    end in an error.
 */
-const socket = io();
 
 const handleError = (message) => {
   document.getElementById('errorMessage').textContent = message;
   document.getElementById('domoMessage').classList.remove('hidden');
 };
+
+const setBet =  (e)  =>  {
+  let CoRR = document.getElementById("CorR");
+  document.getElementById("pBet").innerHTML = e.currentTarget.value;
+  debugger;
+  if(CoRR.value == 'call' && e.currentTarget.value > e.currentTarget.min ){
+    debugger;
+    CoRR.value = 'raise';
+  }else if(CoRR.value == 'raise' && e.currentTarget.value == e.currentTarget.min ){
+    debugger;
+    CoRR.value = 'call';
+  }
+}
 
 /* Sends post requests to the server using fetch. Will look for various
    entries in the response JSON object, and will handle them appropriately.
@@ -20,39 +32,59 @@ const sendPost = async (url, data) => {
     },
     body: JSON.stringify(data),
   });
-
   const result = await response.json();
-  document.getElementById('domoMessage').classList.add('hidden');
+
+  //Since Im returning a document it's not json?
+  //Ideas: turn the document into json feed it back then recreate the document here
 
   if(result.redirect) {
     window.location = result.redirect;
   }
 
   if(result.error) {
+    document.getElementById('domoMessage').classList.add('hidden');
     handleError(result.error);
   }
+
+  if(result.player){
+    data.curPlayer = result.player;
+      //This will send a post request, which goes to the router, which takes it to the tables controller which now
+  //Uses the pre-loaded data sent with the request to re-render the table page
+  //tableUpdate should NOT be a POST, to have res.render function properly it must be a get
+  //But what you CAN do, is send a post request with a redirect to a get request 
+  //and you've effectively sent the body you wanted with the post request
+    sendPost('/tableUpdate',data);
+  }
+
+  if(result.spectator){
+    sendPost('/tableUpdate',data);
+  }
+
+  
 };
+const updateSpectator = async(msg) => {
+  let data =  {
+    s: true,
+    table: msg.table,
+    players: msg.players,
+  }
+
+  sendPost('/tableUpdate',data);
+
+}
 
 const updateTable = async (msg) => {
   //Message contains the data needed to rebuild the page, the only difference is the current player
-
   //Since rendering the page requires the player,  another call needs to be made to get the player
   let data = {
-    name: document.querySelector("#playerName").innerHTML
-  }
-  const response = await fetch('/getPlayer', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-  const curPlayer = response;
-  const table =  msg.table;
-  const players = msg.players;
-  sendPost('/tableUpdate',{players,table,curPlayer});
-  //This will send a post request, which goes to the router, which takes it to the tables controller which now
-  //Uses the pre-loaded data sent with the request to re-render the table page
+    name: document.querySelector("#playerName").innerHTML,
+    curPlayer: 0,
+    table: msg.table,
+    players: msg.players,
+  };
+  debugger;
+  //This is causing issues, it's sending the request, the request is responding
+  sendPost('/getPlayer',data);
 };
 
 const handleEditBox = () => {
@@ -74,6 +106,15 @@ const handleEditBox = () => {
       }
   });
 };
+
+const testF = () => {
+  let data = {name: document.getElementById("playerName").innerHTML,
+    table: document.getElementById('tableName').innerHTML};
+  //When a user has disconnected, update your own form, but only give the name
+  //This should go to a semi-helper table post method which returns redirect json to the same endpoint that updateTable does
+  sendPost('/helperTable', data);
+
+}
 /* Entry point of our client code. Runs when window.onload fires.
    Sets up the event listeners for each form across the whole app.
 */
@@ -86,19 +127,27 @@ const init = async() => {
   const domoMessage = document.getElementById('domoMessage');
   const ch = document.getElementById('tableName');
   const recursive = document.getElementById('updateBlock');
+  const bet =document.getElementById("range");
+  const spec = document.getElementById("spectator");
+  
+  if(spec){
+    //This client is a spectator, they should be updated on the goings on but be careful never to give them a curplayer form
+    socket.on(`${ch.innerHTML}`, updateTable);
 
-  if(ch && !recursive){
-    debugger;
+  }else if(ch && !recursive){
+    //Socket will now only be declared in blocks its needed, having it on non-socket using pages is worthless
+    const socket = io();
+    if(bet){
+      bet.addEventListener('input', setBet);
+    }
     //if this is the table page, then you have joined the table page, send a ping to everyone that you have joined
     //but first, subscribe to the table's channel and always update if you receive anything on it
-    socket.on(`${ch}`, updateTable);
+    socket.on(`${ch.innerHTML}`, updateTable);
     //Since you have joined, you should update everyone
-
     //Doc should have the json that represents a table,
     //An array of JSON player objects
     //And an array of JSON spectator objects
     let t = JSON.parse(document.querySelector("#secretT").innerHTML);
-    debugger;
     let pDoc = [];
     let p = document.querySelectorAll('.pBlock');
     for(let i=0;i<p.length;i++){
@@ -143,7 +192,13 @@ const init = async() => {
     socket.emit('tUpdate', doc)
 
   }else if(ch && recursive){
-    socket.on(`${ch}`, updateTable);
+    const socket = io();
+    if(bet){
+      bet.addEventListener('input', setBet);
+    };
+    socket.on(`${ch.innerHTML}`, updateTable);
+    //Since there are 2 people, you need to react if someone disconnect
+    socket.on('disconnectCheck', testF);
   }
   /* If this page has the signupForm, add it's submit event listener.
      Event listener will grab the username, password, and password2
@@ -228,9 +283,7 @@ const init = async() => {
       return false;
     });
 
-
   }
 };
-
 // Call init when the window loads.
 window.onload = init;

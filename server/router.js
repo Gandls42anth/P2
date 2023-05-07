@@ -16,6 +16,9 @@ const router = (app) => {
     app.get('/table',controllers.Account.tablePage);
     app.post('/tableUpdate',controllers.Table.getTheTable);
     app.post('/getPlayer',controllers.Player.getPlayer);
+    app.get('/tableUpdateGet',controllers.Table.tryAgain);
+    app.post('/decide',controllers.Player.test);
+    app.post('/helperTable',controllers.Table.helperN);
 };
 
 module.exports = router;

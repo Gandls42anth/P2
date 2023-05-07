@@ -14,25 +14,73 @@
             <h3>{{docs.table.hand}}</h3>
             {{#each docs.players}}
             <div>
+                {{#if docs.table.inGame}}
                 <h3>Player: {{this.name}} </h3>
                 <h3>Bet: {{this.bet}}</h3>
                 <h3>Decision: {{this.decision}}</h3>
+                {{else}}
+                <h3>Player: {{this.name}} </h3>
+                <h3>Bet: {{this.bet}}</h3>
+                <h3>Decision: {{this.decision}}</h3>
+                <h3>Hand: {{this.hand}}</h3>
+                {{/if}}
             </div>
             
             {{/each}}
+
+            {{#if docs.s}}
+            <div id="spectator">
+                {{docs.curPlayer.name}}
+            </div>
+            {{else}}
             <div>
                 <h3 id="playerName">{{docs.curPlayer.name}} </h3>
-                <h3>Bet: {{docs.curPlayer.bet}}</h3>
+                <h3>Bet: <span id="playerBet">{{docs.curPlayer.bet}}</span></h3>
                 <h3>Decision: {{docs.curPlayer.decision}}</h3>
                 <h3>Hand: {{docs.curPlayer.hand}}</h3>
+                
+                
+                <form id="playerForm" name="playersFormation" action="/decide" method="POST" class="tableForm">
+                
+                <input type="hidden" name="name" value={{docs.curPlayer.name}} >
+                <input type="hidden" name="table" value={{docs.table.name}} >
+
+                {{#if docs.table.inGame}}
+                <label for="bet">Bet:</label>
+                {{#if docs.allIn}}
+                    <input type="hidden" name="bet" value={{docs.table.curBet}}/>
+                    <input type="submit" name="decision" value="call">
+                    <input type="submit" name="f" value="fold">
+                {{else}}
+                    <input id="range" type="range" min={{docs.min}} max={{docs.curPlayer.chips}} />
+                    <output name="bet" id="pBet">0</output>
+                    <input id="CorR" name="decision" type="submit" value="call">
+                    <input type="submit" name="f" value="fold">
+                {{/if}}
+
+                {{else}}
+                <input type="submit" name="decision" value="ready">
+                {{/if}}
+                </form>
             </div>
+
+
+            {{/if}}
+
+
+
+
+
+
+
+            <hr>
             <div id="secretT">{{docs.tableString}}
             </div>
             {{#if docs.update}}
-                <div id="updateBlock"></div>
+                <div id="updateBlock">This is an update block</div>
             {{/if}}
             <ul id="players">
-                {{#each docs.players}}
+                {{#each docs.playersString}}
                     <li class="pBlock">{{this}}</li>
                 {{/each}}
             </ul>
