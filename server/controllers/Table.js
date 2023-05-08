@@ -123,6 +123,7 @@ const draw = async (req, res, fromTable) => {
 
 }
 const NextReadyCheck = async(req,res) => {
+    debugger;
     let con = true;
     const jTable = await Table.findOne({ name: { $eq: req.body.table } }).lean();
     const pArr = jTable.players;
@@ -143,6 +144,7 @@ const NextReadyCheck = async(req,res) => {
 }
 //This checks if we should move to the next Turn or the next hand
 const NextCheck = async (req, res) => {
+    debugger;
     //Go through each player
     //If each player (that has the decision 'call' or 'raise') has a bet that equals the table bet then continue into next Turn
     //if the player has the decision 'all' their bet doesn't need to be matching the tables
@@ -181,6 +183,7 @@ const NextCheck = async (req, res) => {
 }
 
 const NextHand = async (req, res) => {
+    debugger;
     //With each hand, shuffle the deck, and save the result to the deck attribute of table
     
     let jTable = await Table.findOneAndUpdate(
@@ -215,6 +218,7 @@ const NextHand = async (req, res) => {
 }
 
 const NextTurn = async (req, res, jTable) => {
+    debugger;
     //If this is called, everyone is ready for the next round
     const l = jTable.hand.length;
 
@@ -705,8 +709,6 @@ const join = async (req, res) => {
         let tString = JSON.stringify(jTable);
         let pDoc = [];
         let pStrings = [];
-        pDoc.push(p);
-        pStrings.push(JSON.stringify(p));
         for (let i = 0; i < pArr.length; i++) {
             let pushP = await Player.findOne({ name: { $eq: pArr[i] } }).lean();
             pStrings.push(JSON.stringify(pushP));
@@ -729,6 +731,7 @@ const join = async (req, res) => {
         }
         doc.allIn = ((doc.table.curBet - doc.curPlayer.bet) > doc.curPlayer.chips);
         doc.min = doc.table.curBet - doc.curPlayer.bet;
+        debugger;
         return res.render('table', { docs: doc });
 
     } else {
@@ -795,6 +798,7 @@ const join = async (req, res) => {
 };
 
 const getTheTable = async(req,res) => {
+    debugger;
     /*
     let pString = [];
     for(let i=0;i<req.body.players;i++){
@@ -860,7 +864,92 @@ const tryAgain = async(req,res) =>  {
     }
 };
 
+const tableRecreate =  async(req,res) => {
+    //Since actions are atomic, one player will disconnect at a time
+    //The client side Table must then have +1 player than expected
+    //So if our current recreation has -1 than the client side, we can stop adding
+    //This is important as we don't want to emit an update which will overwrite players WAITING to add their name
+    //Telling them that we have the most up to date info, because we don't
+    //So we must only emit once the recreation is complete
+    //Also remember that spectator disconnections trigger this as well
+    //(even though they shouldn't but I can't think of a way to stop this as long as they're on the same socket)
+    let expectP = req.body.table.players.length;
+    let expectS = req.body.table.spectators.length;
+    let expectTotal = expectP + expectS;
+    let jTable = await Table.findOne({ name: req.body.table }).lean();
+    if(jTable){
+        //If it exists and it has your name in it, delete it, because this is the outdated version
+        //then, recreate it, with only your name in it, and save
+        if(jTable.players.includes(req.body.name) || jTable.spectators.includes(req.body.name) ){
+            await Table.findOneAndDelete({ name: req.body.table.name });
+            let data;
+            if(req.body.s){
+                data = {
+                    name: jTable.name,
+                    curBet: jTable.curBet,
+                    pot: jTable.pot,
+                    deck: jTable.bet,
+                    inGame: jTable.inGame,
+                    spectators: [req.body.name],
+                    players: [],
+                }
+            }else{
+            data = {
+                name: jTable.name,
+                curBet: jTable.curBet,
+                pot: jTable.pot,
+                deck: jTable.bet,
+                inGame: jTable.inGame,
+                players: [req.body.name],
+                spectators: [],
+            }
+            };
+
+            const newTable= new Table(data);
+            await newTable.save();
+            if(expectTotal == 2){
+                //If there were only 2 players and one disconnects, then the initial addition is also the final one
+            }
+
+        }else{
+            //If the table exists, and doesn't have your name, add it
+            if(req.body.s){
+            await Table.findOneAndUpdate({ name: { $eq: req.body.table } },
+                {
+                    $push: {
+                        spectators: req.body.name
+                    }
+                });
+                if(jTable.players.length + jTable.spectators.length+1 ==  expectTotal -1){
+                    //If the current player and spectator count (+1 that we just added)
+                    //Is the expected total (-1 that disconnected to cause all this)
+                    //Then recreation is complete, emit the update
+                    helperTable(jTable.name);
+                }
+            }else{
+                await Table.findOneAndUpdate({ name: { $eq: req.body.table } },
+                    {
+                        $push: {
+                            players: req.body.name
+                        }
+                    });
+
+                    if(jTable.players.length + jTable.spectators.length+1 ==  expectTotal -1){
+                        //If the current player and spectator count (+1 that we just added)
+                        //Is the expected total (-1 that disconnected to cause all this)
+                        //Then recreation is complete, emit the update
+                        helperTable(jTable.name);
+                    }
+            }
+        }
+    }else{
+        //If it doesn't exist, then I don't know what's happening
+
+    }
+}
+
 const helperTable = async (tName) => {
+    debugger;
     //This method should, given the tables name, send out an update with all the most recent information
 
     //The table
@@ -868,7 +957,7 @@ const helperTable = async (tName) => {
 
     //The array of players
     let pDoc = [];
-    let pArr = [];
+    let pArr = jTable.players;
     for(let i=0;i<jTable.players.length;i++){
         let pushP = await Player.findOne({ name: { $eq: pArr[i] } }).lean()
         //Can't push p string after card cast has happened, pString should be raw (because it needs to be reconverted into json) but pDoc should be prtty
@@ -877,7 +966,7 @@ const helperTable = async (tName) => {
     }
 
     let doc = {
-        table: t,
+        table: jTable,
         players: pDoc,
         update: true
     }
@@ -886,6 +975,7 @@ const helperTable = async (tName) => {
 }
 
 const helperN = async(req,res) => {
+    debugger;
 //This should be called by a post method, you're given the name of the player and the name of the table
 //The table
 const jTable =  await Table.findOne({ name: req.body.table }).lean();
@@ -925,5 +1015,6 @@ module.exports = {
     tryAgain,
     helperTable,
     helperN,
-    NextReadyCheck
+    NextReadyCheck,
+    tableRecreate
 }

@@ -108,11 +108,21 @@ const handleEditBox = () => {
 };
 
 const testF = () => {
-  let data = {name: document.getElementById("playerName").innerHTML,
-    table: document.getElementById('tableName').innerHTML};
+  let data;
+  let s = document.getElementById("spectator");
+  if(s){
+    data = {
+      name: s.innerHTML,
+      table: JSON.parse(document.getElementById('secretT').innerHTML),
+      s: true
+    }
+  }else{
+  data = {name: document.getElementById("playerName").innerHTML,
+    table: JSON.parse(document.getElementById('secretT').innerHTML), s: false};
+  }
   //When a user has disconnected, update your own form, but only give the name
   //This should go to a semi-helper table post method which returns redirect json to the same endpoint that updateTable does
-  sendPost('/helperTable', data);
+  sendPost('/tableRecreate', data);
 
 }
 /* Entry point of our client code. Runs when window.onload fires.
@@ -132,7 +142,7 @@ const init = async() => {
   
   if(spec){
     //This client is a spectator, they should be updated on the goings on but be careful never to give them a curplayer form
-    socket.on(`${ch.innerHTML}`, updateTable);
+    socket.on(`${ch.innerHTML}`, updateSpectator);
 
   }else if(ch && !recursive){
     //Socket will now only be declared in blocks its needed, having it on non-socket using pages is worthless

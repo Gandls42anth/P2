@@ -20,6 +20,7 @@ const handleChatMessage = (msg) => {
 };
 
 const fulltUpdate = (msg) => {
+    debugger;
     io.emit(msg.table.name,msg);
 }
 

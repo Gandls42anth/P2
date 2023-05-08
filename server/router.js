@@ -19,6 +19,7 @@ const router = (app) => {
     app.get('/tableUpdateGet',controllers.Table.tryAgain);
     app.post('/decide',controllers.Player.test);
     app.post('/helperTable',controllers.Table.helperN);
+    app.post('/tableRecreate',controllers.Table.tableRecreate);
 };
 
 module.exports = router;
